@@ -1,7 +1,87 @@
 import dns.resolver
 import re
 import time
+import os
 from OSMPythonTools.nominatim import Nominatim
+
+
+class WorldMap:
+    """ASCII Weltkarte für ISS-Anzeige"""
+    
+    def __init__(self):
+        self.worldmap_list = [
+             "|                                                                            |",
+             "|          . _..::__:  ,-\"-\"._        |]       ,     _,.__                 |",
+             "|  _.___ _ _<_>`!(._`.`-.    /         _._     `_ ,_/  '  '-._.---.-.__      |",
+            r"|.{     \" \"  -==,',._\{  \  /  {) _   / _ \">_,-' `                 /-/_   |",
+            r"|\_.:--.        ._ )`^-.  \"'     / ( [_/(                        __,/-'     |",
+            r"|'\"'    \        \"    _\         -_,--'                        /. (|       |",
+            r"|       |           ,'          _)_.\\\._ <> {}             _,' /  '         |",
+             "|       `.         /           [_/_'   \"(                <'}  )             |",
+            r"|        \\\    .-. )           /   `-'\"..' `:._          _)  '             |",
+            r"|          \  (   `(          /         `:\  > \  ,-^.  /' '                 |",
+            r"|           `._,   \"\"         |           \`'   \|   ?_)  {\               |",
+             "|               =.---.        `._._       ,'     \"`  |' ,- '.               |",
+             "|                |    `-._         |     /          `:`<_|=--._              |",
+            r"|                (        >        .     | ,          `=.__.`-'\             |",
+            r"|                  .     /         |     |{|               ,-.,\             |",
+            r"|                  |   ,'           \   / `'             ,\"     `\          |",
+             "|                  |  /              |_'                 |  __   /           |",
+            r"|                  | |                                   '-'  `-'     \.     |",
+             "|                  |/                                          \"      /     |",
+            r"|                  \.                                                '       |",
+             "|                                                                            |",
+             "|                   ,/           _ _____._.--._ _..---.---------.            |",
+            r"|__,-----\"-..?----_/ )\    . ,-'\"              \"                  (__--/  |",
+            r"|                    /__/\/                                                  |",
+             "|                                                                            |"
+        ]
+        
+        self.width = 73
+        self.height = 25
+    
+    def _map_coordinates(self, x, in_min, in_max, out_min, out_max):
+        """Koordinaten von einem Bereich in einen anderen umrechnen"""
+        return round((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
+    
+    def display_iss(self, lat, lon, location_info=None):
+        """ISS auf der Weltkarte anzeigen"""
+        # Karte als Liste von Listen für Manipulation
+        worldmap = [list(line) for line in self.worldmap_list]
+        
+        # Lat/Lon in 2D-Koordinaten umrechnen
+        map_lat = self._map_coordinates(float(lat), 90, -90, 0, self.height - 1)
+        map_lon = self._map_coordinates(float(lon), -180, 180, 0, self.width - 1)
+        
+        # ISS-Position markieren (mit Farbe)
+        if 0 <= map_lat < self.height and 0 <= map_lon < self.width:
+            worldmap[map_lat][map_lon] = '\033[5;92m#\033[00m'  # Grün blinkend
+        
+        # Informationen rechts neben der Karte
+        info_lines = [
+            f"  ISS Position:",
+            f"  Breite:   {lat:.4f}°",
+            f"  Länge:    {lon:.4f}°",
+            f"  Über:     {location_info or 'Unbekannt'}",
+            f"  Zeit:     {time.strftime('%H:%M:%S')}",
+            f"",
+            f"  Legende:",
+            f"  \033[92m#\033[00m = ISS Position"
+        ]
+        
+        # Karte ausgeben
+        print("\n" + "=" * 100)
+        print("ISS TRACKER - Live Position".center(100))
+        print("=" * 100)
+        
+        for i, row in enumerate(worldmap):
+            line = "".join(row)
+            # Info-Text rechts daneben
+            if i < len(info_lines):
+                line += info_lines[i]
+            print(line)
+        
+        print("=" * 100)
 
 
 def get_iss_dns_location():
@@ -193,35 +273,93 @@ def figure_out_ocean(lat, lon):
     return "Unbekannter Ozean"
 
 
+def live_tracking(interval=10):
+    """
+    Live-Tracking der ISS mit ASCII-Weltkarte
+    """
+    world_map = WorldMap()
+    
+    print("ISS Live-Tracker gestartet!")
+    print("Drücke Ctrl+C zum Beenden")
+    print("=" * 50)
+    
+    try:
+        while True:
+            # Screen clearen
+            os.system('clear' if os.name == 'posix' else 'cls')
+            
+            # ISS Position holen
+            loc_data = get_iss_dns_location()
+            if not loc_data:
+                print("Konnte ISS Position nicht abrufen :(")
+                time.sleep(interval)
+                continue
+            
+            # Koordinaten parsen
+            coords = parse_loc_record(loc_data)
+            if not coords:
+                print("Konnte Koordinaten nicht parsen")
+                time.sleep(interval)
+                continue
+            
+            lat, lon, alt = coords
+            
+            # Location bestimmen
+            location = get_location_info(lat, lon)
+            
+            # Weltkarte mit ISS anzeigen
+            world_map.display_iss(lat, lon, location)
+            
+            print(f"\nHöhe: {alt/1000:.1f} km")
+            print(f"Nächstes Update in {interval} Sekunden...")
+            
+            time.sleep(interval)
+            
+    except KeyboardInterrupt:
+        print("\n\nISS-Tracker beendet!")
+
+
 if __name__ == '__main__':
-    print("ISS Tracker")
-    print("=" * 40)
+    import sys
     
-    # ISS Position holen
-    loc_data = get_iss_dns_location()
-    if not loc_data:
-        print("Konnte ISS Position nicht abrufen :(")
-        exit(1)
-    
-    print(f"DNS LOC Record: {loc_data}")
-    
-    # Koordinaten parsen
-    coords = parse_loc_record(loc_data)
-    if not coords:
-        print("Konnte Koordinaten nicht parsen")
-        exit(1)
-    
-    lat, lon, alt = coords
-    
-    # Ausgabe
-    print(f"\nISS Position:")
-    print(f"  Breite:  {lat:.4f}°")
-    print(f"  Länge:   {lon:.4f}°")
-    print(f"  Höhe:    {alt/1000:.1f} km")
-    
-    # Location bestimmen
-    print(f"\nLocation wird bestimmt...")
-    location = get_location_info(lat, lon)
-    print(f"  Über:    {location}")
-    
-    print("\n" + "=" * 40)
+    if len(sys.argv) > 1 and sys.argv[1] == 'live':
+        # Live-Modus
+        interval = 10
+        if len(sys.argv) > 2:
+            try:
+                interval = int(sys.argv[2])
+            except ValueError:
+                print("Ungültiges Intervall, verwende 10 Sekunden")
+        
+        live_tracking(interval)
+    else:
+        # Einmalige Anzeige
+        print("ISS Tracker")
+        print("=" * 40)
+        
+        # ISS Position holen
+        loc_data = get_iss_dns_location()
+        if not loc_data:
+            print("Konnte ISS Position nicht abrufen :(")
+            exit(1)
+        
+        print(f"DNS LOC Record: {loc_data}")
+        
+        # Koordinaten parsen
+        coords = parse_loc_record(loc_data)
+        if not coords:
+            print("Konnte Koordinaten nicht parsen")
+            exit(1)
+        
+        lat, lon, alt = coords
+        
+        # Location bestimmen
+        location = get_location_info(lat, lon)
+        
+        # Weltkarte mit ISS anzeigen
+        world_map = WorldMap()
+        world_map.display_iss(lat, lon, location)
+        
+        print(f"\nHöhe: {alt/1000:.1f} km")
+        print("\nFür Live-Tracking: python iss_tracker.py live [intervall_sekunden]")
+        print("=" * 40)
