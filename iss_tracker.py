@@ -6,88 +6,95 @@ from OSMPythonTools.nominatim import Nominatim
 
 
 class WorldMap:
-    """ASCII Weltkarte für ISS-Anzeige"""
+    """ASCII Weltkarte für ISS-Anzeige - basierend auf SR Linux Satellite Tracker"""
     
     def __init__(self):
         self.worldmap_list = [
-             "|                                                                            |",
-             "|          . _..::__:  ,-\"-\"._        |]       ,     _,.__                 |",
-             "|  _.___ _ _<_>`!(._`.`-.    /         _._     `_ ,_/  '  '-._.---.-.__      |",
-            r"|.{     \" \"  -==,',._\{  \  /  {) _   / _ \">_,-' `                 /-/_   |",
-            r"|\_.:--.        ._ )`^-.  \"'     / ( [_/(                        __,/-'     |",
-            r"|'\"'    \        \"    _\         -_,--'                        /. (|       |",
-            r"|       |           ,'          _)_.\\\._ <> {}             _,' /  '         |",
-             "|       `.         /           [_/_'   \"(                <'}  )             |",
-            r"|        \\\    .-. )           /   `-'\"..' `:._          _)  '             |",
-            r"|          \  (   `(          /         `:\  > \  ,-^.  /' '                 |",
-            r"|           `._,   \"\"         |           \`'   \|   ?_)  {\               |",
-             "|               =.---.        `._._       ,'     \"`  |' ,- '.               |",
-             "|                |    `-._         |     /          `:`<_|=--._              |",
-            r"|                (        >        .     | ,          `=.__.`-'\             |",
-            r"|                  .     /         |     |{|               ,-.,\             |",
-            r"|                  |   ,'           \   / `'             ,\"     `\          |",
-             "|                  |  /              |_'                 |  __   /           |",
-            r"|                  | |                                   '-'  `-'     \.     |",
-             "|                  |/                                          \"      /     |",
-            r"|                  \.                                                '       |",
-             "|                                                                            |",
-             "|                   ,/           _ _____._.--._ _..---.---------.            |",
-            r"|__,-----\"-..?----_/ )\    . ,-'\"              \"                  (__--/  |",
-            r"|                    /__/\/                                                  |",
-             "|                                                                            |"
+
+               "   |                                                                       |",
+            "   |                                                                       |",
+            "   |          . _..::__:  ,-\"-\"._        |]       ,     _,.__              |",
+            "   |  _.___ _ _<_>`!(._`.`-.    /         _._     `_ ,_/  '  '-._.---.-.__ |",
+            "   |.{     \" \"  -==,',._\\{  \\  /  {) _   / _ \">_,-' `                 /-/_ |",
+            "   |\\.:--.        ._ )`^-.  \\\"'     / ( [_/(                        __,/-' |",
+            "   |'\"'    \\        \"    _\\         -_,--'                        /. (|    |",
+            "   |       |           ,'          _)_.\\\\._ <> {}             _,' /  '     |",
+            "   |       `.         /           [_/_'   \"(                <'}  )         |",
+            "   |        \\\\    .-. )           /   `-'\\\"...' `:._          _)  '        |",
+            "   |          \\  (   `(          /         `:\\  > \\  ,-^.  /' '            |",
+            "   |           `._,   \"\"         |           \\`'   \\|   ?_)  {\\            |",
+            "   |               =.---.        `._._       ,'     \"`  |' ,- '.           |",
+            "   |                |    `-._         |     /          `:`<_|=--._         |",
+            "   |                (        >        .     | ,          `=.__.`-'\\        |",
+            "   |                  .     /         |     |{|               ,-.,\\        |",
+            "   |                  |   ,'           \\   / `'             ,\"     `\\      |",
+            "   |                  |  /              |_'                 |  __   /      |",
+            "   |                  | |                                   '-'  `-'     \\.|",
+            "   |                  |/                                          \"      / |",
+            "   |                  \\.                                                '  |",
+            "   |                                                                       |",
+            "   |                   ,/           _ _____._.--._ _..---.---------.       |",
+            "   |__,-----\"-..?----_/ )\\    . ,-'\"              \"                  (__--/|",
+            "   |                    /__/\\/                                             |",
+            "   |                                                                       |"
         ]
         
-        self.width = 73
-        self.height = 25
+        self.width = 71  # Breite zwischen den Pipes
+        self.height = len(self.worldmap_list)
     
     def _map_coordinates(self, x, in_min, in_max, out_min, out_max):
         """Koordinaten von einem Bereich in einen anderen umrechnen"""
         return round((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
     
     def display_iss(self, lat, lon, location_info=None):
-        """ISS auf der Weltkarte anzeigen"""
+        """ISS auf der Weltkarte anzeigen - Format vom SR Linux Plugin adaptiert"""
         # Karte als Liste von Listen für Manipulation
         worldmap = [list(line) for line in self.worldmap_list]
         
-        # Lat/Lon in 2D-Koordinaten umrechnen
+        # Lat/Lon in 2D-Koordinaten umrechnen (SR Linux Methode)
         map_lat = self._map_coordinates(float(lat), 90, -90, 0, self.height - 1)
-        map_lon = self._map_coordinates(float(lon), -180, 180, 0, self.width - 1)
+        map_lon = self._map_coordinates(float(lon), -180, 180, 1, self.width)  # +1 wegen Pipe
         
-        # ISS-Position markieren (mit Farbe)
-        if 0 <= map_lat < self.height and 0 <= map_lon < self.width:
-            worldmap[map_lat][map_lon] = '\033[5;92m#\033[00m'  # Grün blinkend
+        # ISS-Position markieren (SR Linux Style mit blinkend grün)
+        if 0 <= map_lat < self.height and 1 <= map_lon < self.width:
+            worldmap[map_lat][map_lon] = '\033[5;31m#\033[0m'
         
-        # Informationen rechts neben der Karte
-        info_lines = [
-            f"  ISS Position:",
-            f"  Breite:   {lat:.4f}°",
-            f"  Länge:    {lon:.4f}°",
-            f"  Über:     {location_info or 'Unbekannt'}",
-            f"  Zeit:     {time.strftime('%H:%M:%S')}",
-            f"",
-            f"  Legende:",
-            f"  \033[92m#\033[00m = ISS Position"
+        # Info-Zeilen wie im SR Linux Plugin, aber für DNS LOC angepasst
+        position = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]
+        data = [
+            f"\tName        : International Space Station",
+            f"\tID          : 25544 (NORAD)",
+            f"\tTimestamp   : {time.strftime('%Y-%m-%d %H:%M:%S UTC')}",
+            f"\tLatitude    : {lat:.6f}°",
+            f"\tLongitude   : {lon:.6f}°",
+            f"\tLocation    : {location_info or 'Unknown'}",
+            f"\tAltitude    : ~408 km (typical ISS orbit)",
+            f"\tVelocity    : ~27,600 km/h",
+            f"\tOrbital Per.: ~92 minutes",
+            f"\tVisibility  : Variable",
+            f"\tData Source : DNS LOC Record",
+            f"\tResolver    : where-is-the-iss.dedyn.io",
+            f"\tCharacter   : \033[92m'#'\033[00m (blinking red)",
+            f"\tNext Update : {time.strftime('%H:%M:%S', time.localtime(time.time() + 10))}"
         ]
         
-        # Karte ausgeben
+        # Ausgabe im SR Linux Stil
         print("\n" + "=" * 100)
-        print("ISS TRACKER - Live Position".center(100))
+        print("ISS LIVE TRACKER - DNS LOC Record Method".center(100))
         print("=" * 100)
         
         for i, row in enumerate(worldmap):
-            line = "".join(row)
-            # Info-Text rechts daneben
-            if i < len(info_lines):
-                line += info_lines[i]
+            if i in position and position.index(i) < len(data):
+                line = "".join(row) + data[position.index(i)]
+            else:
+                line = "".join(row)
             print(line)
         
         print("=" * 100)
 
 
 def get_iss_dns_location():
-    """
-    Holt die ISS Position über DNS LOC Record
-    """
+    """Holt die ISS Position über DNS LOC Record"""
     try:
         result = dns.resolver.resolve('where-is-the-iss.dedyn.io', 'LOC')
         if result:
@@ -104,10 +111,7 @@ def get_iss_dns_location():
 
 
 def parse_loc_record(loc_str):
-    """
-    Parsed den LOC Record String und extrahiert Lat/Lon/Alt
-    """
-    # Regex für: "43 18 21.050 S 67 33 49.440 E 428960.00m ..."
+    """Parsed den LOC Record String und extrahiert Lat/Lon/Alt"""
     pattern = r"(\d{1,2})\s+(\d{1,2})\s+(\d{1,2}(?:\.\d+)?)\s+([NS])\s+(\d{1,3})\s+(\d{1,2})\s+(\d{1,2}(?:\.\d+)?)\s+([EW])\s+(-?\d+(?:\.\d+)?)m"
     
     match = re.search(pattern, loc_str)
@@ -115,7 +119,6 @@ def parse_loc_record(loc_str):
         print(f"Konnte LOC Record nicht parsen: {loc_str}")
         return None
 
-    # Koordinaten extrahieren
     lat_d, lat_m, lat_s, lat_dir = match.groups()[0:4]
     lon_d, lon_m, lon_s, lon_dir = match.groups()[4:8]
     altitude = match.group(9)
@@ -138,41 +141,31 @@ def parse_loc_record(loc_str):
 
 
 def get_location_info(lat, lon):
-    """
-    Versucht den Standort zu bestimmen - erst über Nominatim, dann über Koordinaten
-    """
-    # Erst mal Nominatim probieren
+    """Bestimmt den Standort - erweitert um Ozean-Erkennung vom SR Linux Code"""
     location = try_nominatim(lat, lon)
     if location:
         return location
     
-    # Falls das nicht klappt, selbst bestimmen
     return guess_location_from_coords(lat, lon)
 
 
 def try_nominatim(lat, lon):
-    """
-    Probiert verschiedene Zoom-Level mit Nominatim
-    """
+    """Nominatim Reverse Geocoding mit verschiedenen Zoom-Levels"""
     nominatim = Nominatim()
     
-    # Verschiedene Zoom-Level durchprobieren
     for zoom in [10, 8, 6, 4, 3]:
         try:
             result = nominatim.query(lat, lon, reverse=True, zoom=zoom)
             if not result:
                 continue
                 
-            # JSON auslesen
             data = result.toJSON()
             if isinstance(data, list) and len(data) > 0:
                 first = data[0]
                 
-                # Fehler abfangen
                 if isinstance(first, dict) and 'error' in first:
                     continue
                 
-                # Nützliche Infos extrahieren
                 name = first.get('display_name', '')
                 address = first.get('address', {})
                 
@@ -203,85 +196,58 @@ def try_nominatim(lat, lon):
 
 
 def guess_location_from_coords(lat, lon):
-    """
-    Rät die Location basierend auf den Koordinaten
-    """
-    # Erst schauen ob es ein bekanntes Land sein könnte
-    country = check_country_bounds(lat, lon)
-    if country:
-        return country
-    
-    # Sonst ist es wahrscheinlich Ozean
-    ocean = figure_out_ocean(lat, lon)
-    hemisphere = "Nord" if lat > 0 else "Süd"
-    
-    return f"{ocean}, {hemisphere}hemisphäre"
-
-
-def check_country_bounds(lat, lon):
-    """
-    Schaut ob die Koordinaten in einem bekannten Land liegen
-    """
-    # Grobe Ländergrenzen - nicht super genau aber ok für ISS
+    """Erweiterte Location-Bestimmung basierend auf SR Linux Satellite Tracker Logik"""
+    # Grobe Ländergrenzen (vom SR Linux Code inspiriert, aber erweitert)
     countries = [
-        (25, 50, -125, -66, "USA"),
-        (42, 83, -141, -52, "Kanada"), 
-        (8, 38, -118, -86, "Mexiko"),
-        (36, 72, -9, 40, "Europa"),
-        (35, 54, 26, 180, "Asien"),
-        (5, 35, 68, 97, "Indien"),
-        (18, 54, 73, 135, "China"),
-        (45, 78, 19, 180, "Russland"),
-        (-55, -10, -74, -34, "Südamerika"),
-        (-37, 38, -18, 52, "Afrika"),
-        (-47, -10, 113, 154, "Australien"),
+        (25, 71, -168, -52, "North America"),  # USA + Kanada
+        (14, 33, -118, -86, "Mexico/Central America"),
+        (36, 71, -10, 40, "Europe"),
+        (35, 80, 26, 180, "Asia"),
+        (-55, 13, -82, -34, "South America"),
+        (-35, 37, -18, 52, "Africa"),
+        (-47, -10, 113, 154, "Australia/Oceania"),
+        (60, 85, -180, 180, "Arctic Region"),
+        (-90, -60, -180, 180, "Antarctic Region"),
     ]
     
     for min_lat, max_lat, min_lon, max_lon, name in countries:
         if min_lat <= lat <= max_lat and min_lon <= lon <= max_lon:
             return name
     
-    return None
+    # Ozean-Bestimmung (erweitert vom SR Linux Code)
+    ocean = determine_ocean(lat, lon)
+    hemisphere = "Northern" if lat > 0 else "Southern"
+    
+    return f"{ocean}, {hemisphere} Hemisphere"
 
 
-def figure_out_ocean(lat, lon):
-    """
-    Bestimmt welcher Ozean es ist
-    """
-    # Pazifik ist der größte - beide Seiten
-    if (lon >= 120 and lon <= 180) or (lon >= -180 and lon <= -70):
-        return "Pazifik"
-    
-    # Atlantik
-    elif -70 <= lon < 20:
-        return "Atlantik"
-    
-    # Indischer Ozean
-    elif 20 <= lon < 120:
-        if lat < -60:
-            return "Südlicher Ozean"
-        return "Indischer Ozean"
-    
-    # Arktis
-    elif lat > 66:
-        return "Arktis"
-    
-    # Antarktis
+def determine_ocean(lat, lon):
+    """Erweiterte Ozean-Bestimmung"""
+    # Spezielle Regionen zuerst
+    if lat > 66:
+        return "Arctic Ocean"
     elif lat < -60:
-        return "Antarktis"
+        return "Southern Ocean"
     
-    return "Unbekannter Ozean"
+    # Hauptozeane
+    if (lon >= 120 and lon <= 180) or (lon >= -180 and lon <= -70):
+        return "Pacific Ocean"
+    elif -70 <= lon < 20:
+        return "Atlantic Ocean" 
+    elif 20 <= lon < 120:
+        return "Indian Ocean"
+    
+    return "Unknown Ocean"
 
 
 def live_tracking(interval=10):
-    """
-    Live-Tracking der ISS mit ASCII-Weltkarte
-    """
+    """Live-Tracking der ISS - vereinfachte Version des SR Linux Agents"""
     world_map = WorldMap()
     
-    print("ISS Live-Tracker gestartet!")
+    print("ISS Live-Tracker gestartet (DNS LOC Method)")
     print("Drücke Ctrl+C zum Beenden")
-    print("=" * 50)
+    print("Basiert auf SR Linux Satellite Tracker von Nokia")
+    print("=" * 60)
     
     try:
         while True:
@@ -291,7 +257,7 @@ def live_tracking(interval=10):
             # ISS Position holen
             loc_data = get_iss_dns_location()
             if not loc_data:
-                print("Konnte ISS Position nicht abrufen :(")
+                print("Konnte ISS Position nicht abrufen")
                 time.sleep(interval)
                 continue
             
@@ -310,8 +276,9 @@ def live_tracking(interval=10):
             # Weltkarte mit ISS anzeigen
             world_map.display_iss(lat, lon, location)
             
-            print(f"\nHöhe: {alt/1000:.1f} km")
+            print(f"\nHöhe: {alt/1000:.1f} km (aus DNS LOC Record)")
             print(f"Nächstes Update in {interval} Sekunden...")
+            print(f"DNS LOC Record: {loc_data}")
             
             time.sleep(interval)
             
@@ -334,13 +301,14 @@ if __name__ == '__main__':
         live_tracking(interval)
     else:
         # Einmalige Anzeige
-        print("ISS Tracker")
-        print("=" * 40)
+        print("ISS Tracker - DNS LOC Record Method")
+        print("Basiert auf Nokia SR Linux Satellite Tracker")
+        print("=" * 50)
         
         # ISS Position holen
         loc_data = get_iss_dns_location()
         if not loc_data:
-            print("Konnte ISS Position nicht abrufen :(")
+            print("Konnte ISS Position nicht abrufen")
             exit(1)
         
         print(f"DNS LOC Record: {loc_data}")
@@ -362,4 +330,4 @@ if __name__ == '__main__':
         
         print(f"\nHöhe: {alt/1000:.1f} km")
         print("\nFür Live-Tracking: python iss_tracker.py live [intervall_sekunden]")
-        print("=" * 40)
+        print("=" * 50)
