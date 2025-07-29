@@ -10,36 +10,35 @@ class WorldMap:
     
     def __init__(self):
         self.worldmap_list = [
-
                "   |                                                                       |",
             "   |                                                                       |",
             "   |          . _..::__:  ,-\"-\"._        |]       ,     _,.__              |",
             "   |  _.___ _ _<_>`!(._`.`-.    /         _._     `_ ,_/  '  '-._.---.-.__ |",
             "   |.{     \" \"  -==,',._\\{  \\  /  {) _   / _ \">_,-' `                 /-/_ |",
-            "   |\\.:--.        ._ )`^-.  \\\"'     / ( [_/(                        __,/-' |",
+            "   |\\.:--.        ._ )`^-.  \\\"'     / ( [_/(                        __,/-' |-30",
             "   |'\"'    \\        \"    _\\         -_,--'                        /. (|    |",
             "   |       |           ,'          _)_.\\\\._ <> {}             _,' /  '     |",
             "   |       `.         /           [_/_'   \"(                <'}  )         |",
-            "   |        \\\\    .-. )           /   `-'\\\"...' `:._          _)  '        |",
+            "   |        \\\\    .-. )           /   `-'\\\"...' `:._          _)  '        |-60",
             "   |          \\  (   `(          /         `:\\  > \\  ,-^.  /' '            |",
             "   |           `._,   \"\"         |           \\`'   \\|   ?_)  {\\            |",
             "   |               =.---.        `._._       ,'     \"`  |' ,- '.           |",
-            "   |                |    `-._         |     /          `:`<_|=--._         |",
+            "   |                |    `-._         |     /          `:`<_|=--._         |-0",
             "   |                (        >        .     | ,          `=.__.`-'\\        |",
             "   |                  .     /         |     |{|               ,-.,\\        |",
             "   |                  |   ,'           \\   / `'             ,\"     `\\      |",
-            "   |                  |  /              |_'                 |  __   /      |",
+            "   |                  |  /              |_'                 |  __   /      |-30",
             "   |                  | |                                   '-'  `-'     \\.|",
             "   |                  |/                                          \"      / |",
             "   |                  \\.                                                '  |",
-            "   |                                                                       |",
+            "   |                                                                       |-60",
             "   |                   ,/           _ _____._.--._ _..---.---------.       |",
             "   |__,-----\"-..?----_/ )\\    . ,-'\"              \"                  (__--/|",
             "   |                    /__/\\/                                             |",
             "   |                                                                       |"
         ]
         
-        self.width = 71  # Breite zwischen den Pipes
+        self.width = 71  
         self.height = len(self.worldmap_list)
     
     def _map_coordinates(self, x, in_min, in_max, out_min, out_max):
@@ -48,18 +47,18 @@ class WorldMap:
     
     def display_iss(self, lat, lon, location_info=None):
         """ISS auf der Weltkarte anzeigen - Format vom SR Linux Plugin adaptiert"""
-        # Karte als Liste von Listen für Manipulation
+        
         worldmap = [list(line) for line in self.worldmap_list]
         
-        # Lat/Lon in 2D-Koordinaten umrechnen (SR Linux Methode)
+       
         map_lat = self._map_coordinates(float(lat), 90, -90, 0, self.height - 1)
         map_lon = self._map_coordinates(float(lon), -180, 180, 1, self.width)  # +1 wegen Pipe
         
-        # ISS-Position markieren (SR Linux Style mit blinkend grün)
+       
         if 0 <= map_lat < self.height and 1 <= map_lon < self.width:
             worldmap[map_lat][map_lon] = '\033[5;31m#\033[0m'
         
-        # Info-Zeilen wie im SR Linux Plugin, aber für DNS LOC angepasst
+        
         position = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]
         data = [
             f"\tName        : International Space Station",
@@ -78,7 +77,7 @@ class WorldMap:
             f"\tNext Update : {time.strftime('%H:%M:%S', time.localtime(time.time() + 10))}"
         ]
         
-        # Ausgabe im SR Linux Stil
+        
         print("\n" + "=" * 100)
         print("ISS LIVE TRACKER - DNS LOC Record Method".center(100))
         print("=" * 100)
@@ -197,9 +196,9 @@ def try_nominatim(lat, lon):
 
 def guess_location_from_coords(lat, lon):
     """Erweiterte Location-Bestimmung basierend auf SR Linux Satellite Tracker Logik"""
-    # Grobe Ländergrenzen (vom SR Linux Code inspiriert, aber erweitert)
+   
     countries = [
-        (25, 71, -168, -52, "North America"),  # USA + Kanada
+        (25, 71, -168, -52, "North America"), 
         (14, 33, -118, -86, "Mexico/Central America"),
         (36, 71, -10, 40, "Europe"),
         (35, 80, 26, 180, "Asia"),
@@ -214,7 +213,7 @@ def guess_location_from_coords(lat, lon):
         if min_lat <= lat <= max_lat and min_lon <= lon <= max_lon:
             return name
     
-    # Ozean-Bestimmung (erweitert vom SR Linux Code)
+   
     ocean = determine_ocean(lat, lon)
     hemisphere = "Northern" if lat > 0 else "Southern"
     
@@ -300,12 +299,12 @@ if __name__ == '__main__':
         
         live_tracking(interval)
     else:
-        # Einmalige Anzeige
+        
         print("ISS Tracker - DNS LOC Record Method")
         print("Basiert auf Nokia SR Linux Satellite Tracker")
         print("=" * 50)
         
-        # ISS Position holen
+        
         loc_data = get_iss_dns_location()
         if not loc_data:
             print("Konnte ISS Position nicht abrufen")
@@ -313,7 +312,7 @@ if __name__ == '__main__':
         
         print(f"DNS LOC Record: {loc_data}")
         
-        # Koordinaten parsen
+        
         coords = parse_loc_record(loc_data)
         if not coords:
             print("Konnte Koordinaten nicht parsen")
@@ -321,10 +320,10 @@ if __name__ == '__main__':
         
         lat, lon, alt = coords
         
-        # Location bestimmen
+        
         location = get_location_info(lat, lon)
         
-        # Weltkarte mit ISS anzeigen
+        
         world_map = WorldMap()
         world_map.display_iss(lat, lon, location)
         
