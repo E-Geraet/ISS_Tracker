@@ -31,7 +31,7 @@ To get started, follow these steps:
 
 ```bash
 # Clone the repository
-git clone https://github.com/deinusername/iss-tracker.git
+git clone https://github.com/E-Geraet/iss-tracker.git
 cd iss-tracker
 
 # Create a virtual environment (recommended)
